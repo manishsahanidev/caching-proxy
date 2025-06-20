@@ -1,5 +1,13 @@
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+
 public class CachingProxy {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         Integer port = null;
         String origin = null;
         boolean clearCache = false;
@@ -37,6 +45,7 @@ public class CachingProxy {
         if (clearCache) {
             System.out.println("Clearing cache...");
             // Logic to clear cache later
+            return;
         }
 
         if (port == null || origin == null) {
@@ -47,5 +56,23 @@ public class CachingProxy {
         System.out.println("Starting proxy server on port " + port);
         System.out.println("Forwarding requests to origin: " + origin);
 
+        // Http server
+        HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
+        server.createContext("/", new ProxyHandler());
+        server.setExecutor(null); // default executor
+        server.start();
+
+        System.out.println("Server is listening on http://localhost:" + port);
+    }
+
+    static class ProxyHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            String responseText = "Hello from proxy!";
+            exchange.sendResponseHeaders(200, responseText.length());
+            OutputStream os = exchange.getResponseBody();
+            os.write(responseText.getBytes());
+            os.close();
+        }
     }
 }
